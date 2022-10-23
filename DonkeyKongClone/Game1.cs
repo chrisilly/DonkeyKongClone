@@ -8,6 +8,8 @@ using System.IO;
 
 namespace DonkeyKongClone
 {
+    enum GameState { Menu, Play, Win, Lose }
+
     public class Game1 : Game
     {
         private GraphicsDeviceManager graphics;
@@ -67,7 +69,7 @@ namespace DonkeyKongClone
         
         private void ReadLevel()
         {
-            StreamReader levelFile = new StreamReader("level.txt");
+            StreamReader levelFile = new StreamReader("Content\\level.txt");
             levelRowList = new List<string>();
 
             while (!levelFile.EndOfStream)
