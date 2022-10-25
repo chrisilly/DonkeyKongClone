@@ -20,6 +20,8 @@ namespace DonkeyKongClone
         List<string> levelRowList;
         Tile[,] levelTiles;
 
+        Player player;
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -51,7 +53,7 @@ namespace DonkeyKongClone
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            player.Update(gameTime);
 
             base.Update(gameTime);
         }
@@ -69,7 +71,7 @@ namespace DonkeyKongClone
         
         private void ReadLevel()
         {
-            StreamReader levelFile = new StreamReader("Content\\level.txt");
+            StreamReader levelFile = new StreamReader("..\\..\\..\\Content\\level.txt");
             levelRowList = new List<string>();
 
             while (!levelFile.EndOfStream)
@@ -88,22 +90,39 @@ namespace DonkeyKongClone
                 for (int j = 0; j < levelRowList[0].Length; j++)
                 {
                     Color tileColor = Color.White;
+                    Vector2 tilePosition = new Vector2(Tile.tileSize.X * j, Tile.tileSize.Y * i);
 
                     if (levelRowList[i][j] == 'S')
+                    {
                         tileColor = Color.Blue;
+                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor, true);
+                    }
                     else if (levelRowList[i][j] == 'L')
+                    {
                         tileColor = Color.Yellow;
+                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
+                    }
                     else if (levelRowList[i][j] == 'F')
+                    {
                         tileColor = Color.Orange;
+                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
+                    }
                     else if (levelRowList[i][j] == 'P')
+                    {
                         tileColor = Color.Pink;
-                    else if (levelRowList[i][j] == 'M')
-                        tileColor = Color.Red;
+                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
+                    }
                     else if (levelRowList[i][j] == '-')
+                    {
                         tileColor = Color.Black;
-
-                    
-                    levelTiles[j, i] = new Tile(tileTexture, new Vector2(Tile.tileSize.X * j, Tile.tileSize.Y * i), tileColor);
+                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
+                    }
+                    else if (levelRowList[i][j] == 'M')
+                    {
+                        tileColor = Color.Black;
+                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
+                        player = new Player(tileTexture, tilePosition);
+                    }
                 }
             }
         }
@@ -115,6 +134,7 @@ namespace DonkeyKongClone
                 for (int j = 0; j < levelRowList[0].Length; j++)
                 {
                     levelTiles[j, i].Draw(spriteBatch);
+                    player.Draw(spriteBatch);
                 }
             }
         }
