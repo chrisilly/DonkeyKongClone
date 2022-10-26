@@ -12,12 +12,10 @@ namespace DonkeyKongClone
     {
         Texture2D texture;
         Vector2 position;
-        Rectangle hitbox;
         Color color;
 
         bool solid;
         bool ladder;
-        bool actor;
 
         public static Point tileSize = new Point(64, 64);
 
@@ -29,18 +27,6 @@ namespace DonkeyKongClone
             this.color = color;
             this.solid = solid;
             this.ladder = ladder;
-        }
-        
-        // Actor tiles that interact with the player, but which do not affect player movement
-        public Tile(Texture2D texture, Vector2 position, Color color, bool actor)
-        {
-            this.texture = texture;
-            this.position = position;
-            this.color = color;
-            this.actor = actor;
-            this.solid = false;
-            this.ladder = false;
-            this.hitbox = new Rectangle((int)position.X, (int)position.Y, texture.Width, texture.Height);
         }
         
         // For tiles that do not collide or interact with the player

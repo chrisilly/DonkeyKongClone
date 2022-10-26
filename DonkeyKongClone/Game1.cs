@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 namespace DonkeyKongClone
 {
@@ -16,13 +15,25 @@ namespace DonkeyKongClone
         private GraphicsDeviceManager graphics;
         private SpriteBatch spriteBatch;
 
-        Texture2D tileTexture;
+        Random random = new Random();
+
+        GameState gameState;
 
         List<string> levelRowList;
         static Tile[,] levelTiles;
 
+        static int lives;
+
+        Texture2D tileTexture;
+        SpriteFont spriteFont;
+        Vector2 hudPosition;
+
+        string[] gameStateMessages = new string[] { "Press SPACE to play!", "You win! Press SPACE to play again!", "You lose! Press SPACE to play again!" };
+
         Player player;
-        List<Enemy> enemyList = new List<Enemy>();
+        Actor pauline;
+        List<Actor> enemyList = new List<Actor>();
+
 
         public Game1()
         {
@@ -38,6 +49,9 @@ namespace DonkeyKongClone
             graphics.ApplyChanges();
 
             ReadLevel();
+            hudPosition = new Vector2(Tile.tileSize.X, Tile.tileSize.Y * levelRowList.Count);
+            lives = 3;
+            gameState = GameState.Menu;
 
             base.Initialize();
         }
@@ -46,9 +60,11 @@ namespace DonkeyKongClone
         {
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            spriteFont = Content.Load<SpriteFont>("spritefont");
             tileTexture = Content.Load<Texture2D>("tile64");
 
             LoadLevel();
+            enemyList[random.Next(3)].SetSpeed(150f);
         }
 
         protected override void Update(GameTime gameTime)
@@ -56,25 +72,77 @@ namespace DonkeyKongClone
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            player.Update(gameTime);
+            switch (gameState)
+            {
+                case GameState.Menu:
+                    if (Keyboard.GetState().IsKeyDown(Keys.Space))
+                        gameState = GameState.Play;
+                    break;
+                case GameState.Play:
+
+                    if (lives <= 0)
+                        gameState = GameState.Lose;
+
+                    foreach (Actor enemy in enemyList)
+                        enemy.Update(gameTime);
+
+                    player.Update(gameTime);
+                    CheckCollision();
+                    break;
+                case GameState.Win:
+                    if (Keyboard.GetState().IsKeyDown(Keys.Space))
+                        RestartLevel();
+                    break;
+                case GameState.Lose:
+                    if (Keyboard.GetState().IsKeyDown(Keys.Space))
+                        RestartLevel();
+                    break;
+                default:
+                    break;
+            }
 
             base.Update(gameTime);
         }
+
 
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
 
             spriteBatch.Begin();
-            DrawLevel();
+            DrawTiles();
+
+            switch (gameState)
+            {
+                case GameState.Menu:
+                    Debug.WriteLine(gameStateMessages);
+                    spriteBatch.DrawString(spriteFont, gameStateMessages[0], hudPosition, Color.White);
+                    break;
+                case GameState.Play:
+                    foreach (Actor enemy in enemyList)
+                        enemy.Draw(spriteBatch);
+                    spriteBatch.DrawString(spriteFont, "Lives: " + lives, hudPosition, Color.White);
+                    break;
+                case GameState.Win:
+                    spriteBatch.DrawString(spriteFont, gameStateMessages[1], hudPosition, Color.White);
+                    break;
+                case GameState.Lose:
+                    spriteBatch.DrawString(spriteFont, gameStateMessages[2], hudPosition, Color.White);
+                    break;
+                default:
+                    break;
+            }
+
+            pauline.Draw(spriteBatch);
+            player.Draw(spriteBatch);
             spriteBatch.End();
 
             base.Draw(gameTime);
         }
-        
+
         private void ReadLevel()
         {
-            StreamReader levelFile = new StreamReader("..\\..\\..\\Content\\level.txt");
+            StreamReader levelFile = new StreamReader(@"..\..\..\Content\level.txt");
             levelRowList = new List<string>();
 
             while (!levelFile.EndOfStream)
@@ -109,20 +177,20 @@ namespace DonkeyKongClone
                     {
                         levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor, true, false);
                     }
+                    else if (levelRowList[i][j] == '-')
+                    {
+                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
+                    }
                     else if (levelRowList[i][j] == 'F')
                     {
                         levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
-                        Enemy enemy = new Enemy(tileTexture, tilePosition);
+                        Actor enemy = new Actor(tileTexture, tilePosition, Color.Orange);
                         enemyList.Add(enemy);
                     }
                     else if (levelRowList[i][j] == 'P')
                     {
-                        tileColor = Color.Pink;
                         levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
-                    }
-                    else if (levelRowList[i][j] == '-')
-                    {
-                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
+                        pauline = new Actor(tileTexture, tilePosition, Color.Pink);
                     }
                     else if (levelRowList[i][j] == 'M')
                     {
@@ -133,27 +201,33 @@ namespace DonkeyKongClone
             }
         }
 
-        private void DrawLevel()
+        private void RestartLevel()
+        {
+            lives = 3;
+            enemyList = new List<Actor>();
+            LoadLevel();
+            enemyList[random.Next(3)].SetSpeed(150f);
+            gameState = GameState.Play;
+        }
+
+        private void DrawTiles()
         {
             for (int i = 0; i < levelRowList.Count; i++)
             {
                 for (int j = 0; j < levelRowList[0].Length; j++)
                 {
                     levelTiles[j, i].Draw(spriteBatch);
-                    foreach(Enemy enemy in enemyList)
-                        enemy.Draw(spriteBatch);
-                    player.Draw(spriteBatch);
                 }
             }
         }
 
-        public static bool IsTileValidPath(Vector2 position)
+        public static bool IsTileValidDestination(Vector2 destination)
         {
-            // Check if destination is not a solid tile
-            if (!levelTiles[(int)position.X/Tile.tileSize.X, (int)position.Y/Tile.tileSize.Y].IsSolid())
+            // Check if destination is a non-solid tile
+            if (!levelTiles[(int)destination.X / Tile.tileSize.X, (int)destination.Y / Tile.tileSize.Y].IsSolid())
             {
                 // Check if the destination has a solid or ladder tile underneath it
-                if (levelTiles[(int)position.X/Tile.tileSize.X, (int)(position.Y+Tile.tileSize.Y)/Tile.tileSize.Y].IsSolid() || levelTiles[(int)position.X / Tile.tileSize.X, (int)(position.Y + Tile.tileSize.Y) / Tile.tileSize.Y].IsLadder())
+                if (levelTiles[(int)destination.X / Tile.tileSize.X, (int)(destination.Y + Tile.tileSize.Y) / Tile.tileSize.Y].IsSolid() || levelTiles[(int)destination.X / Tile.tileSize.X, (int)(destination.Y + Tile.tileSize.Y) / Tile.tileSize.Y].IsLadder())
                 {
                     return true;
                 }
@@ -165,6 +239,24 @@ namespace DonkeyKongClone
             else
             {
                 return false;
+            }
+        }
+
+        public void CheckCollision()
+        {
+            foreach (Actor enemy in enemyList)
+            {
+                if (player.GetHitbox().Intersects(enemy.GetHitbox()))
+                {
+                    lives--;
+                    enemyList.Remove(enemy);
+                    break;
+                }
+            }
+
+            if (player.GetHitbox().Intersects(pauline.GetHitbox()))
+            {
+                gameState = GameState.Win;
             }
         }
     }

@@ -12,26 +12,32 @@ namespace DonkeyKongClone
     internal class Player
     {
         Texture2D texture;
+
         Vector2 position;
         Vector2 direction;
         Vector2 destination;
         float speed = 225f;
         bool moving = false;
 
+        Rectangle hitbox;
+
         public Player(Texture2D texture, Vector2 position)
         {
             this.texture = texture;
             this.position = position;
+            hitbox = new Rectangle((int)position.X, (int)position.Y, texture.Width, texture.Height);
         }
 
         public void Update(GameTime gameTime)
         {
             Controller(gameTime);
+            UpdateHitbox();
         }
 
         public void Draw(SpriteBatch spriteBatch)
         {
             spriteBatch.Draw(texture, position, Color.Red);
+            //spriteBatch.Draw(texture, hitbox, Color.FromNonPremultiplied(0, 255, 0, 255)); // Draw Player Hitbox
         }
 
         public void Controller(GameTime gameTime)
@@ -72,11 +78,22 @@ namespace DonkeyKongClone
             this.direction = direction;
             Vector2 newDestination = position + direction * Tile.tileSize.X;
 
-            if (Game1.IsTileValidPath(newDestination))
+            if (Game1.IsTileValidDestination(newDestination))
             {
                 destination = newDestination;
                 moving = true;
             }
+        }
+
+        public void UpdateHitbox()
+        {
+            hitbox.X = (int)position.X;
+            hitbox.Y = (int)position.Y;
+        }
+
+        public Rectangle GetHitbox()
+        {
+            return hitbox;
         }
     }
 }
