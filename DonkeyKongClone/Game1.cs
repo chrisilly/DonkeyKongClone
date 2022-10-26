@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace DonkeyKongClone
 {
@@ -18,9 +19,10 @@ namespace DonkeyKongClone
         Texture2D tileTexture;
 
         List<string> levelRowList;
-        Tile[,] levelTiles;
+        static Tile[,] levelTiles;
 
         Player player;
+        List<Enemy> enemyList = new List<Enemy>();
 
         public Game1()
         {
@@ -35,6 +37,8 @@ namespace DonkeyKongClone
             graphics.PreferredBackBufferHeight = 1080;
             graphics.ApplyChanges();
 
+            ReadLevel();
+
             base.Initialize();
         }
 
@@ -44,7 +48,6 @@ namespace DonkeyKongClone
 
             tileTexture = Content.Load<Texture2D>("tile64");
 
-            ReadLevel();
             LoadLevel();
         }
 
@@ -89,23 +92,28 @@ namespace DonkeyKongClone
             {
                 for (int j = 0; j < levelRowList[0].Length; j++)
                 {
-                    Color tileColor = Color.White;
+                    Color tileColor = Color.Black;
                     Vector2 tilePosition = new Vector2(Tile.tileSize.X * j, Tile.tileSize.Y * i);
 
                     if (levelRowList[i][j] == 'S')
                     {
                         tileColor = Color.Blue;
-                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor, true);
+                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor, true, false);
                     }
                     else if (levelRowList[i][j] == 'L')
                     {
                         tileColor = Color.Yellow;
-                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
+                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor, false, true);
+                    }
+                    else if (levelRowList[i][j] == 'X')
+                    {
+                        levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor, true, false);
                     }
                     else if (levelRowList[i][j] == 'F')
                     {
-                        tileColor = Color.Orange;
                         levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
+                        Enemy enemy = new Enemy(tileTexture, tilePosition);
+                        enemyList.Add(enemy);
                     }
                     else if (levelRowList[i][j] == 'P')
                     {
@@ -114,12 +122,10 @@ namespace DonkeyKongClone
                     }
                     else if (levelRowList[i][j] == '-')
                     {
-                        tileColor = Color.Black;
                         levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
                     }
                     else if (levelRowList[i][j] == 'M')
                     {
-                        tileColor = Color.Black;
                         levelTiles[j, i] = new Tile(tileTexture, tilePosition, tileColor);
                         player = new Player(tileTexture, tilePosition);
                     }
@@ -134,8 +140,31 @@ namespace DonkeyKongClone
                 for (int j = 0; j < levelRowList[0].Length; j++)
                 {
                     levelTiles[j, i].Draw(spriteBatch);
+                    foreach(Enemy enemy in enemyList)
+                        enemy.Draw(spriteBatch);
                     player.Draw(spriteBatch);
                 }
+            }
+        }
+
+        public static bool IsTileValidPath(Vector2 position)
+        {
+            // Check if destination is not a solid tile
+            if (!levelTiles[(int)position.X/Tile.tileSize.X, (int)position.Y/Tile.tileSize.Y].IsSolid())
+            {
+                // Check if the destination has a solid or ladder tile underneath it
+                if (levelTiles[(int)position.X/Tile.tileSize.X, (int)(position.Y+Tile.tileSize.Y)/Tile.tileSize.Y].IsSolid() || levelTiles[(int)position.X / Tile.tileSize.X, (int)(position.Y + Tile.tileSize.Y) / Tile.tileSize.Y].IsLadder())
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
             }
         }
     }

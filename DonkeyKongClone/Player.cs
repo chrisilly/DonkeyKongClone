@@ -70,12 +70,13 @@ namespace DonkeyKongClone
         public void Move(Vector2 direction)
         {
             this.direction = direction;
-            //Vector2 newDestination = position + direction * Tile.tileSize.X;
+            Vector2 newDestination = position + direction * Tile.tileSize.X;
 
-            //destination = newDestination;
-
-            destination = position + direction * (float)Tile.tileSize.X;
-            moving = true;
+            if (Game1.IsTileValidPath(newDestination))
+            {
+                destination = newDestination;
+                moving = true;
+            }
         }
     }
 }

@@ -10,34 +10,62 @@ namespace DonkeyKongClone
 {
     internal class Tile
     {
-        Texture2D tileTexture;
-        Vector2 tilePosition;
-        Color tileColor;
+        Texture2D texture;
+        Vector2 position;
+        Rectangle hitbox;
+        Color color;
+
         bool solid;
+        bool ladder;
+        bool actor;
 
         public static Point tileSize = new Point(64, 64);
 
-        // For solid tiles which actors collide with
-        public Tile(Texture2D tileTexture, Vector2 tilePosition, Color tileColor, bool solid)
+        // For solid and ladder tiles which actors collide and interact with
+        public Tile(Texture2D texture, Vector2 position, Color color, bool solid, bool ladder)
         {
-            this.tileTexture = tileTexture;
-            this.tilePosition = tilePosition;
-            this.tileColor = tileColor;
+            this.texture = texture;
+            this.position = position;
+            this.color = color;
             this.solid = solid;
+            this.ladder = ladder;
         }
         
-        // For non-solids that do not collide
-        public Tile(Texture2D tileTexture, Vector2 tilePosition, Color tileColor)
+        // Actor tiles that interact with the player, but which do not affect player movement
+        public Tile(Texture2D texture, Vector2 position, Color color, bool actor)
         {
-            this.tileTexture = tileTexture;
-            this.tilePosition = tilePosition;
-            this.tileColor = tileColor;
+            this.texture = texture;
+            this.position = position;
+            this.color = color;
+            this.actor = actor;
             this.solid = false;
+            this.ladder = false;
+            this.hitbox = new Rectangle((int)position.X, (int)position.Y, texture.Width, texture.Height);
+        }
+        
+        // For tiles that do not collide or interact with the player
+        public Tile(Texture2D texture, Vector2 position, Color color)
+        {
+            this.texture = texture;
+            this.position = position;
+            this.color = color;
+            this.solid = false;
+            this.ladder = false;
         }
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            spriteBatch.Draw(tileTexture, tilePosition, tileColor);
+            spriteBatch.Draw(texture, position, color);
+        }
+
+        public bool IsSolid()
+        {
+            return solid;
+        }
+
+        public bool IsLadder()
+        {
+            return ladder;
         }
     }
 }
